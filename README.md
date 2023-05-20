@@ -75,6 +75,10 @@ and get the results as:
 
 In the file `60keV_20_W_Al0-5_21_tab.lis` we have 7 spectra of differential yield
 on every stage of X-ray passage through material. Spectrum is loaded for the final stage (`-fdn 7`).
+FLUKA data is stored in format:
+
+    | Emin [GeV] | Emax [GeV] | F [cm-2 GeV-1 primary-1] | F_rerr [%] | 
+
 We also need to be sure that no data with energy less than 1 keV will be loaded, that's why
 we need to drop the first 2 rows from the beginning of spectrum data (`-frd 2`).
 
@@ -96,13 +100,18 @@ results will be:
     Eeff (Al / Cu): 25.6106 / 26.2829 keV
     Emean:  48.8191 keV
 
+SpekPy data have a structure:
+
+    | Emid [keV] | F_total [keV-1 cm-2] | F_char [keV-1 cm-2] |
+
 **IMPORTANT**: NIST data for all the mu coefficients will be used by default! PENELOPE's data could
 be used with: `-mu_source "pene"`.
 
 NIST data was parsed from the
 [NIST Standard Reference Database 126](https://www.nist.gov/pml/x-ray-mass-attenuation-coefficients) and stored
 under `./data/nist`. PENELOPE's data was stolen from the
-[SpekPy code](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/data/tables/) ><.
+[SpekPy code](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/data/tables/) 
+_><_ and is available under `./data/pene`.
 
 ### Documentation
 
