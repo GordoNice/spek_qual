@@ -8,9 +8,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy import interpolate
-from scipy.optimize import curve_fit, minimize, minimize_scalar
-from sklearn.metrics import r2_score
-import matplotlib.pyplot as plt
+from scipy.optimize import minimize_scalar
 
 
 # TODO: better path handling needed
@@ -217,7 +215,8 @@ def load_fluka_data(filename, det_n, row_drop=2, save=True, noprint=True):
 
 	# Make normalized spectrum
 	spectrum["S(E)"] = \
-		spectrum["F [cm-2 GeV-1 primary-1]"]/spectrum["F [cm-2 GeV-1 primary-1]"].sum()
+		spectrum["F [cm-2 GeV-1 primary-1]"]\
+		/ spectrum["F [cm-2 GeV-1 primary-1]"].sum()
 	spectrum["Emid [keV]"] = spectrum["Emin [keV]"]+spectrum["dE [keV]"]/2
 
 	return spectrum[["Emin [keV]", "Emax [keV]", "Emid [keV]", "dE [keV]", "S(E)"]]
@@ -246,6 +245,10 @@ def load_spekpy_data(filename, sep='\t', char=False, noprint=True):
 	spectrum = pd.read_csv(
 		f"data/spectra/{filename}", sep=sep, comment="#",
 		names=names, usecols=names)
+
+	if not noprint:
+		print("Verify loaded data:")
+		print(spectrum)
 
 	# TODO: here we assume that bin width is constant!
 	spectrum["dE [keV]"] = spectrum["Emid [keV]"][1]-spectrum["Emid [keV]"][0]
@@ -325,7 +328,8 @@ def xvl(
 	# Get linear coefficient of attenuation
 	att_material_name = att_material if isinstance(att_material, str) else "mixed"
 	mu_att = GetMu(
-		medium=att_material, rho=att_material_rho, mu_type="mass", mu_source=mu_source)
+		medium=att_material, rho=att_material_rho,
+		mu_type="mass", mu_source=mu_source)
 	spectrum[f"mu ({att_material_name}) (cm-1)"] = mu_att(spectrum["Emid [keV]"])
 
 	# Calculate initial exposure without attenuator
@@ -387,7 +391,8 @@ def attenuate(
 	# Get linear coefficient of attenuation
 	att_material_name = att_material if isinstance(att_material, str) else "mixed"
 	mu_att = GetMu(
-		medium=att_material, rho=att_material_rho, mu_type="mass", mu_source=mu_source)
+		medium=att_material, rho=att_material_rho,
+		mu_type="mass", mu_source=mu_source)
 	spectrum[f"mu ({att_material_name}) (cm-1)"] = mu_att(spectrum["Emid [keV]"])
 
 	if not noprint:
@@ -415,15 +420,13 @@ def attenuate(
 	return exposure2 / exposure1
 
 
-def e_mean(spectrum, noprint=True):
+def e_mean(spectrum):
 	"""
 	A function to calculate the fluence-weighted mean energy of the spectrum
 
 	:param spectrum: DataFrame in a format:
 		| Emin [keV] | Emax [keV] | Emid [keV] | dE [keV] | S(E) |
 	:type spectrum: pd.DataFrame
-	:param noprint: print information while executing or not
-	:type noprint: bool
 	:return: the fluence-weighted mean energy of spectrum
 	:rtype: float
 	"""
@@ -478,7 +481,8 @@ def e_eff(
 		att_material_rho=att_material_rho, red_fraction=0.5,
 		mu_source=mu_source, noprint=noprint) * 10  # convert to cm
 	mu_att = GetMu(
-		medium=att_material, rho=att_material_rho, mu_type="mass", mu_source=mu_source)
+		medium=att_material, rho=att_material_rho,
+		mu_type="mass", mu_source=mu_source)
 
 	# TODO: upper limit is hardcoded to the 1000 keV
 	return minimize_scalar(
@@ -522,12 +526,12 @@ class GetMu:
 				path,
 				sep='\t', skiprows=1,
 				names=names, usecols=names, header=None)
-			x = df["Energy (MeV)"].to_numpy() * 1e3  # convert to keV
+			x_dat = df["Energy (MeV)"].to_numpy() * 1e3  # convert to keV
 			if mu_type == "energy":
-				y = df["mu_en/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
+				y_dat = df["mu_en/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
 			else:
-				y = df["mu/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
-			return np.log(x), np.log(y)  # !!! LOG SCALE !!!
+				y_dat = df["mu/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
+			return np.log(x_dat), np.log(y_dat)  # !!! LOG SCALE !!!
 
 		if self.mu_source == "nist":
 			if isinstance(self.medium, dict):
@@ -565,7 +569,6 @@ class GetMu:
 				self.interpolator = interpolate.interp1d(np.log(x), np.log(y))
 		else:
 			exit("No mu data!")
-
 
 	def __call__(self, x):
 		if isinstance(self.medium, dict):
@@ -645,8 +648,7 @@ class SpekQual:
 		self.hi_cu = self.hvl1_cu/self.hvl2_cu
 
 		# The fluence-weighted mean energy of spectrum
-		self.emean = e_mean(
-			spectrum=self.spectrum, noprint=noprint)
+		self.emean = e_mean(spectrum=self.spectrum)
 		self.eeff_al = e_eff(
 			spectrum=self.spectrum, mu_source=self.mu_source, noprint=noprint)
 		self.eeff_cu = e_eff(
@@ -723,7 +725,8 @@ class SpekQual:
 					Path("result"),
 					Path(self.filename).stem+"_spekqual.dat"), mode="w") as f:
 			f.write(
-				f"spek_qual beam quality characteristics for the spectrum {self.filename}\n\n"
+				f"spek_qual beam quality characteristics "
+				f"for the spectrum {self.filename}\n\n"
 				f"HVL1 (Al / Cu):\t{self.hvl1_al:.6} / {self.hvl1_cu:.6} mm\n"
 				f"HVL2 (Al / Cu):\t{self.hvl2_al:.6} / {self.hvl2_cu:.6} mm\n"
 				f"QVL (Al / Cu):\t{self.qvl_al:.6} / {self.qvl_cu:.6} mm\n"
@@ -791,8 +794,7 @@ def get_args():
 	parser.add_argument(
 		'-fdn',
 		'--fluka_det_n',
-		help=
-		'Only for the  spectrum data format: detector number in file to '
+		help='Only for the  spectrum data format: detector number in file to '
 		'load (Detector n)',
 		metavar='fluka_det_n',
 		type=int,
@@ -801,8 +803,7 @@ def get_args():
 	parser.add_argument(
 		'-frd',
 		'--fluka_row_drop',
-		help=
-		'Only for the FLUKA spectrum data format: how many rows to drop from '
+		help='Only for the FLUKA spectrum data format: how many rows to drop from '
 		'beginning of the file (cut to 1 keV)',
 		metavar='fluka_row_drop',
 		type=int,
@@ -811,16 +812,14 @@ def get_args():
 	parser.add_argument(
 		'-fs',
 		'--fluka_save',
-		help=
-		'Only for the FLUKA spectrum data format: '
+		help='Only for the FLUKA spectrum data format: '
 		'save the extracted spectrum data from FLUKA file to the "result" foolder',
 		action='store_true')
 
 	parser.add_argument(
 		'-ss',
 		'--spekpy_sep',
-		help=
-		'Only for the SpekPy spectrum data format: '
+		help='Only for the SpekPy spectrum data format: '
 		'delimiter used to separate columns in file with spectrum',
 		metavar='spekpy_sep',
 		type=str,
@@ -829,8 +828,7 @@ def get_args():
 	parser.add_argument(
 		'-ms',
 		'--mu_source',
-		help=
-		'Choose mu data: "nist" or "pene"',
+		help='Choose mu data: "nist" or "pene"',
 		metavar='mu_source',
 		type=str,
 		default="nist")
@@ -838,8 +836,7 @@ def get_args():
 	parser.add_argument(
 		'-sc',
 		'--spekpy_char',
-		help=
-		'Only for the SpekPy spectrum data format: '
+		help='Only for the SpekPy spectrum data format: '
 		'flag to get column with the characteristic fluence, otherwise'
 		' total fluence will be used for the beam qualification',
 		action='store_true')
@@ -853,10 +850,10 @@ def get_args():
 	args = parser.parse_args()
 
 	if args.mu_source != "nist" and args.mu_source != "pene":
-			parser.error('Only "nist" or "pene" mu data are currently available!')
+		parser.error('Only "nist" or "pene" mu data are currently available!')
 
 	if args.format != "fluka" and args.format != "spekpy":
-			parser.error('Only "fluka" or "spekpy" formats are currently supported!')
+		parser.error('Only "fluka" or "spekpy" formats are currently supported!')
 
 	# Check if input file exists, rise error if not
 	if os.path.isfile(f"data/spectra/{args.input}"):
