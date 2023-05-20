@@ -1,0 +1,9 @@
+spek_qual beam quality characteristics for the spectrum 130keV_20_dW_Al0-5_21_tab.lis
+
+HVL1 (Al / Cu):	1.74597 / 0.0577218 mm
+HVL2 (Al / Cu):	4.06477 / 0.172076 mm
+QVL (Al / Cu):	5.81075 / 0.229798 mm
+TVL (Al / Cu):	15.2211 / 0.836064 mm
+hi (Al / Cu):	0.429538 / 0.335443 mm
+Eeff (Al / Cu):	27.0218 / 27.8617 keV
+Emean:	49.3452 keV

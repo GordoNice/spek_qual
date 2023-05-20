@@ -1,0 +1,9 @@
+spek_qual beam quality characteristics for the spectrum 20mono_fluka.dat
+
+HVL1 (Al / Cu):	0.769516 / 0.0233614 mm
+HVL2 (Al / Cu):	0.769516 / 0.0233614 mm
+QVL (Al / Cu):	1.53903 / 0.0467228 mm
+TVL (Al / Cu):	2.55628 / 0.0776048 mm
+hi (Al / Cu):	1.0 / 1.0 mm
+Eeff (Al / Cu):	20.14 / 20.14 keV
+Emean:	20.14 keV
