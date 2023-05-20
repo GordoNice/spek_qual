@@ -655,6 +655,17 @@ class SpekQual:
 			self.spectrum, att_material="z29",
 			att_material_rho=8.96, mu_source=self.mu_source, noprint=noprint)
 
+		self.__results =\
+			f"spek_qual total beam quality characteristics " \
+			f"for the spectrum {self.filename}\n\n" \
+			f"HVL1 (Al / Cu):\t{self.hvl1_al:.6} / {self.hvl1_cu:.6} mm\n" \
+			f"HVL2 (Al / Cu):\t{self.hvl2_al:.6} / {self.hvl2_cu:.6} mm\n" \
+			f"QVL (Al / Cu):\t{self.qvl_al:.6} / {self.qvl_cu:.6} mm\n" \
+			f"TVL (Al / Cu):\t{self.tvl_al:.6} / {self.tvl_cu:.6} mm\n" \
+			f"hi (Al / Cu):\t{self.hi_al:.6} / {self.hi_cu:.6} mm\n" \
+			f"Eeff (Al / Cu):\t{self.eeff_al:.6} / {self.eeff_cu:.6} keV\n" \
+			f"Emean:\t{self.emean:.6} keV"
+
 	def layer_al(self, fraction):
 		"""
 		Calculate layer of Al to reduce air Kerma value to the specified
@@ -706,15 +717,7 @@ class SpekQual:
 		"""
 		Print all the quality characteristics for the spectrum
 		"""
-		print(
-			f"HVL1 (Al): {self.hvl1_al} mm HVL1 (Cu): {self.hvl1_cu} mm\n"
-			f"HVL2 (Al): {self.hvl2_al} mm HVL2 (Cu): {self.hvl2_cu} mm\n"
-			f"hi (Al): {self.hi_al} mm hi (Cu): {self.hi_cu} mm\n"
-			f"QVL (Al): {self.qvl_al} mm QVL (Cu): {self.qvl_cu} mm\n"
-			f"TVL (Al): {self.tvl_al} mm TVL (Cu): {self.tvl_cu} mm\n"
-			f"Emean: {self.emean} keV\n"
-			f"Eeff (Al): {self.eeff_al} keV\n"
-			f"Eeff (Cu): {self.eeff_cu} keV")
+		print(self.__results)
 
 	def save_all(self):
 		"""
