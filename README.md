@@ -74,9 +74,9 @@ and get the results as:
     Emean:  30.0545 keV
 
 In the file `60keV_20_W_Al0-5_21_tab.lis` we have 7 spectra of differential yield
-on every stage of X-ray  passage through material. Spectrum is loaded for the final stage (`-fdn 7`).
+on every stage of X-ray passage through material. Spectrum is loaded for the final stage (`-fdn 7`).
 We also need to be sure that no data with energy less than 1 keV will be loaded, that's why
-we need to drop the first 2 rows from the beginning of data (`-frd 2`).
+we need to drop the first 2 rows from the beginning of spectrum data (`-frd 2`).
 
 All the results will be saved under `./result/60keV_20_W_Al0-5_21_tab_spekqual.dat` path.
 
@@ -96,7 +96,7 @@ results will be:
     Eeff (Al / Cu): 25.6106 / 26.2829 keV
     Emean:  48.8191 keV
 
-NIST data for all the mu coefficients will be used by default! PENELOPE's data could
+**IMPORTANT**: NIST data for all the mu coefficients will be used by default! PENELOPE's data could
 be used with: `-mu_source "pene"`.
 
 NIST data was parsed from the
