@@ -104,7 +104,7 @@ be used with: `-mu_source "pene"`.
 Will be available soon...
 
 ### TODO list
-- [] Detailed documentation
-- [] Nice pdf output (using LaTeX) with all the results for loaded spectrum
-- [] Other spectra data formats (please contact me for any suggestions)
-- [] ???
+- [ ] Detailed documentation
+- [ ] Nice pdf output (using LaTeX) with all the results for loaded spectrum
+- [ ] Other spectra data formats (please contact me for any suggestions)
+- [ ] ???
