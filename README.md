@@ -96,8 +96,13 @@ results will be:
     Eeff (Al / Cu): 25.6106 / 26.2829 keV
     Emean:  48.8191 keV
 
-NIST data for all the mu coefficients will be used by default! Penelope data could
+NIST data for all the mu coefficients will be used by default! PENELOPE's data could
 be used with: `-mu_source "pene"`.
+
+NIST data was parsed from the
+[NIST Standard Reference Database 126](https://www.nist.gov/pml/x-ray-mass-attenuation-coefficients) and stored
+under `./data/nist`. PENELOPE's data was stolen from the
+[SpekPy code](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/data/tables/) ><.
 
 ### Documentation
 
