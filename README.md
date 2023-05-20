@@ -75,7 +75,8 @@ and get the results as:
 
 In the file `60keV_20_W_Al0-5_21_tab.lis` we have 7 spectra of differential yield
 on every stage of X-ray passage through material. Spectrum is loaded for the final stage (`-fdn 7`).
-FLUKA data is stored in format:
+
+FLUKA data is stored in a format:
 
     | Emin [GeV] | Emax [GeV] | F [cm-2 GeV-1 primary-1] | F_rerr [%] | 
 
