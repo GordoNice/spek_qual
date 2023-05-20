@@ -2,7 +2,7 @@
 
 **SpekQual** is a Python script for X-ray spectrum quality assessment, with this
 code one can determine beam quality characteristics, such as: HVL<sub>1</sub>, HVL<sub>2</sub>,
-QVL, TVL, H<sub>i</sub>, etc. Currently spectra data from [FLUKA](https://fluka.cern/)
+QVL, TVL, H<sub>i</sub>, E<sub>eff.</sub> etc. Currently spectra data from [FLUKA](https://fluka.cern/)
 output and [SpekPy](https://bitbucket.org/spekpy/spekpy_release/wiki/Home)
 are supported, other formats could be added in the future releases.
 
