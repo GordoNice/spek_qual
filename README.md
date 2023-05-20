@@ -31,7 +31,7 @@ Script works from cli, type:
 
     ./spek_qual.py -h
 
-to show help:
+this will show usage info:
 
     usage: spek_qual.py [-h] [-f format] [-fdn fluka_det_n] [-frd fluka_row_drop] [-fs] [-ss spekpy_sep] [-ms mu_source] [-sc] [-v] spec.dat
     
