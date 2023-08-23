@@ -816,7 +816,7 @@ def get_args():
 		'-fs',
 		'--fluka_save',
 		help='Only for the FLUKA spectrum data format: '
-		'save the extracted spectrum data from FLUKA file to the "result" foolder',
+		'save the extracted spectrum data from FLUKA file to the "result" folder',
 		action='store_true')
 
 	parser.add_argument(
@@ -831,7 +831,7 @@ def get_args():
 	parser.add_argument(
 		'-ms',
 		'--mu_source',
-		help='Choose mu data: "nist" or "pene"',
+		help='Choose mu database: "nist" or "pene"',
 		metavar='mu_source',
 		type=str,
 		default="nist")
@@ -852,10 +852,10 @@ def get_args():
 
 	args = parser.parse_args()
 
-	if args.mu_source != "nist" and args.mu_source != "pene":
+	if args.mu_source not in ("nist", "pene"):
 		parser.error('Only "nist" or "pene" mu data are currently available!')
 
-	if args.format != "fluka" and args.format != "spekpy":
+	if args.format not in ("fluka", "spekpy"):
 		parser.error('Only "fluka" or "spekpy" formats are currently supported!')
 
 	# Check if input file exists, rise error if not
@@ -895,7 +895,7 @@ def main():
 
 	quality.print_all()
 	quality.save_all()
-
+	print(quality.layer_cu(fraction=0.53))
 
 if __name__ == '__main__':
 	main()
