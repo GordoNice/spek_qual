@@ -895,7 +895,6 @@ def main():
 
 	quality.print_all()
 	quality.save_all()
-	print(quality.layer_cu(fraction=0.53))
 
 if __name__ == '__main__':
 	main()
