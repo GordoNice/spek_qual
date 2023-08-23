@@ -109,9 +109,8 @@ be used with: `-mu_source "pene"`.
 
 NIST data was parsed from the
 [NIST Standard Reference Database 126](https://www.nist.gov/pml/x-ray-mass-attenuation-coefficients) and stored
-under `./data/nist`. PENELOPE's data was stolen from the
-[SpekPy code](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/data/tables/) 
-_><_ and is available under `./data/pene`.
+under `./data/nist`. PENELOPE's data was used from the [SpekPy code](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/data/tables/) 
+and is available under `./data/pene`. `License.txt` file is included in the folder.
 
 ### Documentation
 
