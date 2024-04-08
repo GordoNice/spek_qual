@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 from scipy.optimize import minimize_scalar
-
+import matplotlib.pyplot as plt  # plots
 
 # TODO: better path handling needed
 PATH2DAT = "data"
@@ -442,7 +442,7 @@ def e_eff(
 		spectrum, att_material="z13", att_material_rho=2.699,
 		mu_source="nist", noprint=True):
 	"""
-	A function to calculate the fluence-weighted mean energy of spectrum
+	A function to calculate the effective energy of spectrum
 
 	:param spectrum: DataFrame in a format:
 		| Emin [keV] | Emax [keV] | Emid [keV] | dE [keV] | S(E) |
@@ -484,9 +484,9 @@ def e_eff(
 		medium=att_material, rho=att_material_rho,
 		mu_type="mass", mu_source=mu_source)
 
-	# TODO: upper limit is hardcoded to the 1000 keV
+	# TODO: upper limit is hardcoded to the 1500 keV
 	return minimize_scalar(
-		cost_function, bounds=(1, 1000), method="bounded").x
+		cost_function, bounds=(1, 1500), method="bounded").x
 
 
 def fit_exp(x, a, b, c):
@@ -494,26 +494,27 @@ def fit_exp(x, a, b, c):
 
 
 # TODO: Improve Penelope mu data
+# TODO: NIST data is not full!
 class GetMu:
-	def __init__(self, medium, rho: float, mu_type="mass", mu_source="nist"):
+	def __init__(self, medium, rho: float, mu_type="attenuation", mu_source="nist"):
 		"""
-		Class returns interp1d object:
-		function returns coefficient for specified photon energy (in keV)
-		for X-Ray attenuation coefficients (mass or energy) which were loaded
-		from NIST or Penelope databases. Only "z13", "z29" and "air" materials
-		are available for Penelope case!
+		Class returns PchipInterpolator object:
+		which represent function of coefficient for specified photon energy (in keV)
+		for X-Ray mu coefficients (attenuation or energy-absorption)
+		in cm^2/g which were loaded from NIST and Penelope databases.
+		Only "z13", "z29" and "air" materials are available for Penelope case!
 
 		:param medium: required material in dict {Z:frac, ...} or by name
 		:type medium: dict, str
 		:param rho: density of material in g/cm^3, if rho=1.0, mu/rho will be
-			returned
+			returned (mass), otherwise mu (linear attenuation coefficient)
 		:type rho: float
-		:param mu_type: type of attenuation coefficients "mass" or "energy"
+		:param mu_type: type of mu coefficients "attenuation" or "energy"
 		:type mu_type: str
 		:param mu_source: "nist" or "penelope"
 		:type mu_source: str
 		:return: Interpolator object
-		:rtype: scipy.interpolate.interp1d
+		:rtype: scipy.interpolate.PchipInterpolator
 		"""
 		self.medium = medium
 		self.rho = rho
@@ -524,14 +525,14 @@ class GetMu:
 		def resolve_df(path):
 			df = pd.read_csv(
 				path,
-				sep='\t', skiprows=1,
+				sep='\s+', comment="#",
 				names=names, usecols=names, header=None)
-			x_dat = df["Energy (MeV)"].to_numpy() * 1e3  # convert to keV
+			self.x_dat = df["Energy (MeV)"].to_numpy() * 1e3  # convert to keV
 			if mu_type == "energy":
-				y_dat = df["mu_en/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
+				self.y_dat = df["mu_en/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
 			else:
-				y_dat = df["mu/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
-			return np.log(x_dat), np.log(y_dat)  # !!! LOG SCALE !!!
+				self.y_dat = df["mu/rho (cm^2/g)"].to_numpy()*self.rho  # convert to mu
+			return np.log(self.x_dat), np.log(self.y_dat)  # !!! LOG SCALE !!!
 
 		if self.mu_source == "nist":
 			if isinstance(self.medium, dict):
@@ -539,36 +540,79 @@ class GetMu:
 				for key in self.medium.keys():
 					self.interpolators[key] = \
 						interpolate.interp1d(
-							*resolve_df(f"data/nist/z{key:02d}.tsv"))
+							*resolve_df(f"data/nist/z{key:02d}.dat"), bounds_error=False,assume_sorted=True)
 			else:
 				self.interpolator = interpolate.interp1d(
-					*resolve_df(f"data/nist/{medium}.tsv"))
+					*resolve_df(f"data/nist/{medium}.dat"), bounds_error=False,assume_sorted=True)
 		elif self.mu_source == "pene":
 			if self.mu_type == "energy":  # TODO: only air for now!
-				x = \
+				self.x_dat = \
 					np.array(
 						load_json(
 							f"data/pene/pene_muen_air.dat")["photon energy"])*1e3
-				y = \
+				self.y_dat = \
 					np.array(load_json(
 						f"data/pene/pene_muen_air.dat")["muen_over_rho_air"])*self.rho
-				self.interpolator = interpolate.interp1d(np.log(x), np.log(y))
+				self.interpolator = interpolate.interp1d(
+					np.log(self.x_dat), np.log(self.y_dat), bounds_error=False,assume_sorted=True)
 			else:  # TODO: get rid of this dict hack
 				__ = {
 					key: value for key, value in zip(
 						[f"z{i:02d}" for i in range(1, 93)], [i-1 for i in range(1, 93)])}
-				x = \
+				self.x_dat = \
 					np.array(
 						load_json(
 							f"data/pene/pene_mu.dat")["photon energy"][
 							__[self.medium]])*1e3
-				y = \
+				self.y_dat = \
 					np.array(load_json(
 						f"data/pene/pene_mu.dat")["mu_over_rho"][
 						__[self.medium]])*self.rho
-				self.interpolator = interpolate.interp1d(np.log(x), np.log(y))
+				self.interpolator = interpolate.interp1d(
+					np.log(self.x_dat), np.log(self.y_dat), bounds_error=False,assume_sorted=True)
 		else:
 			exit("No mu data!")
+
+	def plot(self, x_plot):
+		"""
+		Method to plot mu interpolation data
+		:param x_plot: dots to plot
+		"""
+		fig, ax = plt.subplots(figsize=(12, 10))
+
+		# Set labels
+		ax.set_xlabel('Photon energy, keV', fontsize=26)
+		ax.set_ylabel(r'$\mu/\rho$'" or "r"$\mu_{en}/\rho$"r",  cm$^{2}$/g", fontsize=26)
+
+		# Set log scale
+		plt.yscale("log")
+		plt.xscale("log")
+
+		# Set tics parameters
+		ax.tick_params(axis='both', which='major', length=10, width=2, direction="in", labelsize=24)
+		ax.tick_params(axis='both', which='minor', length=5, width=2, direction="in", labelsize=24)
+
+		plt.plot(x_plot, self.__call__(x_plot), "o", color="blue")
+
+		if not isinstance(self.medium, dict):
+			# Plot data points
+			plt.plot(self.x_dat, self.y_dat, "o", color="red")
+
+		plt.plot(x_plot, self.__call__(x_plot), "-", color="black")
+
+		if not isinstance(self.medium, dict):
+			plt.legend(
+				["Interpolation points"], fontsize=24)
+		else:
+			plt.legend(
+				[
+					"Interpolation points",
+					"Data points"], fontsize=24)
+
+		fig.tight_layout()
+
+		plt.grid()
+		plt.show()
 
 	def __call__(self, x):
 		if isinstance(self.medium, dict):
@@ -662,7 +706,7 @@ class SpekQual:
 			f"HVL2 (Al / Cu):\t{self.hvl2_al:.6} / {self.hvl2_cu:.6} mm\n" \
 			f"QVL (Al / Cu):\t{self.qvl_al:.6} / {self.qvl_cu:.6} mm\n" \
 			f"TVL (Al / Cu):\t{self.tvl_al:.6} / {self.tvl_cu:.6} mm\n" \
-			f"hi (Al / Cu):\t{self.hi_al:.6} / {self.hi_cu:.6} mm\n" \
+			f"hi (Al / Cu):\t{self.hi_al:.6} / {self.hi_cu:.6}\n" \
 			f"Eeff (Al / Cu):\t{self.eeff_al:.6} / {self.eeff_cu:.6} keV\n" \
 			f"Emean:\t{self.emean:.6} keV"
 
@@ -876,8 +920,124 @@ def get_args():
 	return args
 
 
-def test():
-	return None
+def attenuation():
+	args = get_args()  # receive args
+
+	# Get SpekQual object
+	quality = SpekQual(
+		filename=args.input, data_format=args.format,
+		fluka_det_n=args.fluka_det_n,
+		fluka_row_drop=args.fluka_row_drop,
+		fluka_save=args.fluka_save, spekpy_sep=args.spekpy_sep,
+		spekpy_char=args.spekpy_char, mu_source=args.mu_source,
+		noprint=not args.verbose)
+
+	fraction = 0.9
+	# water_layer = quality.layer(fraction, att_material="water", att_material_rho=1.0)
+	water_layer = quality.layer(fraction, att_material="blood", att_material_rho=1.06)
+	poly_layer = quality.layer(fraction, att_material="polystyrene", att_material_rho=1.05)
+	glass_layer = quality.layer(fraction, att_material="pyrex", att_material_rho=2.23)
+	# glass_layer = quality.layer(fraction, att_material={
+	# 	5: 0.040061,
+	# 	8: 0.539564,
+	# 	11: 0.028191,
+	# 	13: 0.011644,
+	# 	14: 0.37722,
+	# 	19:	0.003321}, att_material_rho=2.23)
+	print()
+	print(f"HVL_Al: {quality.hvl1_al:.4f} mm")
+	print(f"Water layer to reduce kerma to {fraction}: {water_layer:.3f} mm")
+	print(f"Polystyrene layer to reduce kerma to {fraction}: {poly_layer:.3f} mm")
+	print(f"Glass layer to reduce kerma to {fraction}: {glass_layer:.3f} mm")
+	# return None
+
+def test2():
+
+	c1 = GetMu("air", rho=1.0)
+	c2 = GetMu(
+		{
+			6: 0.000124,
+			7: 0.755268,
+			8: 0.231781,
+			18: 0.012827
+		}, rho=1.0)
+
+	c_fat_at = GetMu(
+		{
+			1: 0.114,
+			6: 0.598,
+			7: 0.007,
+			8: 0.278,
+			11: 0.001,
+			16: 0.001,
+			17: 0.001
+		}, mu_type="at", rho=1.0)
+
+
+	c_fat_en = GetMu(
+		{
+			1: 0.114,
+			6: 0.598,
+			7: 0.007,
+			8: 0.278,
+			11: 0.001,
+			16: 0.001,
+			17: 0.001
+		}, mu_type="energy", rho=1.0)
+
+
+	# x_plot = np.geomspace(1, 2e4, num=100)
+	x_plot = np.array([
+		1.00000E-03,
+		1.50000E-03,
+		2.00000E-03,
+		3.00000E-03,
+		4.00000E-03,
+		5.00000E-03,
+		6.00000E-03,
+		8.00000E-03,
+		1.00000E-02,
+		1.50000E-02,
+		2.00000E-02,
+		3.00000E-02,
+		4.00000E-02,
+		5.00000E-02,
+		6.00000E-02,
+		8.00000E-02,
+		1.00000E-01,
+		1.50000E-01,
+		2.00000E-01,
+		3.00000E-01,
+		4.00000E-01,
+		5.00000E-01,
+		6.00000E-01,
+		8.00000E-01,
+		1.00000E+00,
+		1.25000E+00,
+		1.50000E+00,
+		2.00000E+00,
+		3.00000E+00,
+		4.00000E+00,
+		5.00000E+00,
+		6.00000E+00,
+		8.00000E+00,
+		1.00000E+01,
+		1.50000E+01,
+		2.00000E+01
+	])
+	x_plot = x_plot*1e3
+	c_fat_en.plot(x_plot)
+
+	for en in x_plot:
+		print(f"{en*1e-3:1.5E}  {c_fat_at(en):1.3E}  {c_fat_en(en):1.3E}")
+
+
+def test3():
+
+	x_plot = np.geomspace(1, 2e4, num=1000)
+	for z in range(1,92):
+		c = GetMu(f"z{z:02d}", rho=1.0)
+		c.plot(x_plot)
 
 
 def main():
@@ -898,3 +1058,6 @@ def main():
 
 if __name__ == '__main__':
 	main()
+	# attenuation()
+	# test2()
+	# test3()
